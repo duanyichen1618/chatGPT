@@ -1,0 +1,29 @@
+{
+  "databasePath": "./data.sqlite",
+  "pages": [
+    {
+      "name": "System A",
+      "url": "https://example.com/a/dashboard",
+      "refreshSeconds": 30,
+      "listeners": [
+        {
+          "name": "auth-token",
+          "urlPatterns": ["https://example.com/a/api/*"],
+          "headerName": "authorization",
+          "primaryKey": "system_a_auth_token"
+        }
+      ],
+      "autoLogin": {
+        "enabled": true,
+        "hasLoginTypeButton": true,
+        "loginTypeSelector": "#login-type",
+        "usernameSelector": "#username",
+        "username": "demo",
+        "passwordSelector": "#password",
+        "password": "demo123",
+        "loginButtonSelector": "#login-btn",
+        "postLoginUrl": "https://example.com/a/dashboard"
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "inventory-sync-listener",
+  "version": "0.1.0",
+  "description": "Electron-based web listener for inventory sync",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^29.1.0",
+    "sqlite3": "^5.1.7"
+  }
+}
