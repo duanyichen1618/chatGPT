@@ -1,16 +1,26 @@
 {
+  "settings": {
+    "launchDelaySeconds": 30,
+    "autoStartOnBoot": false,
+    "listenerHeadless": false,
+    "autoLoginHeadless": false
+  },
   "databasePath": "./data.sqlite",
   "pages": [
     {
-      "name": "System A",
+      "id": "system-a",
+      "name": "系统A",
       "url": "https://example.com/a/dashboard",
       "refreshSeconds": 30,
+      "manualLogin": false,
       "listeners": [
         {
-          "name": "auth-token",
-          "urlPatterns": ["https://example.com/a/api/*"],
+          "name": "授权Token",
+          "urlPatterns": [
+            "https://example.com/a/api/*"
+          ],
           "headerName": "authorization",
-          "primaryKey": "system_a_auth_token"
+          "primaryKey": "system_a_token"
         }
       ],
       "autoLogin": {
@@ -22,7 +32,8 @@
         "passwordSelector": "#password",
         "password": "demo123",
         "loginButtonSelector": "#login-btn",
-        "postLoginUrl": "https://example.com/a/dashboard"
+        "postLoginUrl": "https://example.com/a/dashboard",
+        "collapsed": false
       }
     }
   ]
