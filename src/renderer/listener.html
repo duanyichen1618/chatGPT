@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>网页监听配置</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="container">
+  <div class="panel">
+    <h1>网页监听配置</h1>
+    <div class="row">
+      <button id="add-page">新增页面</button>
+      <button id="save" class="secondary">保存本地配置</button>
+      <button id="apply">确认并运行</button>
+      <button id="devtools" class="secondary">开发者模式</button>
+    </div>
+  </div>
+  <div id="pages"></div>
+  <div class="panel">
+    <h3>后台运行日志</h3>
+    <div id="log-box" class="log-box"></div>
+  </div>
+</div>
+<script src="./listener.js"></script>
+</body>
+</html>
