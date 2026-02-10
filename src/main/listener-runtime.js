@@ -35,10 +35,11 @@ class ListenerRuntime {
   startPage(pageId, pageConfig, settings) {
     this.stopPage(pageId);
 
+    const listenerHeadless = Boolean(settings.listenerHeadless);
     const window = new BrowserWindow({
       width: 1280,
       height: 900,
-      show: !Boolean(settings.listenerHeadless),
+      show: !listenerHeadless,
       title: `监听页面 - ${pageConfig.name || pageId}`,
       webPreferences: {
         contextIsolation: true,
@@ -54,7 +55,7 @@ class ListenerRuntime {
       refreshTimer: null,
       listenersAttached: false,
       listenerDisposers: [],
-      autoLoginInProgress: false
+      settings
     };
 
     this.pageStates.set(pageId, state);
@@ -102,14 +103,10 @@ class ListenerRuntime {
       }
     });
 
-    const autoLoginTrigger = async () => {
+    window.webContents.on('did-finish-load', async () => {
       this.emitLog(pageId, `页面加载完成: ${window.webContents.getURL()}`);
       await this.tryAutoLogin(state);
-    };
-
-    window.webContents.on('did-finish-load', autoLoginTrigger);
-    window.webContents.on('did-navigate', autoLoginTrigger);
-    window.webContents.on('did-navigate-in-page', autoLoginTrigger);
+    });
   }
 
   attachRequestListeners(state) {
@@ -146,11 +143,6 @@ class ListenerRuntime {
   }
 
   async handleRefresh(state) {
-    if (state.autoLoginInProgress) {
-      this.emitLog(state.pageId, '自动登录进行中，跳过本次刷新');
-      return;
-    }
-
     const currentUrl = state.window.webContents.getURL();
     const targetUrl = state.pageConfig.url;
     if (currentUrl !== targetUrl && state.pageConfig.autoLogin?.enabled) {
@@ -166,69 +158,46 @@ class ListenerRuntime {
   async tryAutoLogin(state) {
     const autoLogin = state.pageConfig.autoLogin || {};
     const currentUrl = state.window.webContents.getURL();
-    const targetUrl = state.pageConfig.url;
-
-    if (!autoLogin.enabled || currentUrl === targetUrl || state.autoLoginInProgress) {
+    if (!autoLogin.enabled || currentUrl === state.pageConfig.url) {
       return;
     }
 
-    state.autoLoginInProgress = true;
-    this.emitLog(state.pageId, `开始执行自动登录流程: ${currentUrl}`);
-
+    this.emitLog(state.pageId, '开始执行自动登录流程');
     const script = `(() => {
       const cfg = ${JSON.stringify(autoLogin)};
       const click = (selector) => {
-        if (!selector) return false;
+        if (!selector) return;
         const element = document.querySelector(selector);
-        if (!element) return false;
-        element.focus();
-        element.click();
-        return true;
+        if (element) {
+          element.click();
+        }
       };
       const fill = (selector, value) => {
-        if (!selector) return false;
+        if (!selector) return;
         const element = document.querySelector(selector);
-        if (!element) return false;
-        element.focus();
-        element.value = value || '';
-        element.dispatchEvent(new InputEvent('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      };
-
-      const result = {
-        loginTypeClicked: false,
-        usernameFilled: false,
-        passwordFilled: false,
-        loginClicked: false
+        if (element) {
+          element.focus();
+          element.value = value || '';
+          element.dispatchEvent(new Event('input', { bubbles: true }));
+          element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
       };
 
       if (cfg.hasLoginTypeButton) {
-        result.loginTypeClicked = click(cfg.loginTypeSelector);
+        click(cfg.loginTypeSelector);
       }
-      result.usernameFilled = fill(cfg.usernameSelector, cfg.username);
-      result.passwordFilled = fill(cfg.passwordSelector, cfg.password);
-      result.loginClicked = click(cfg.loginButtonSelector);
-      return result;
+      fill(cfg.usernameSelector, cfg.username);
+      fill(cfg.passwordSelector, cfg.password);
+      click(cfg.loginButtonSelector);
     })();`;
 
-    let stepResult = null;
-    try {
-      stepResult = await state.window.webContents.executeJavaScript(script, true);
-      this.emitLog(state.pageId, `自动登录执行结果: ${JSON.stringify(stepResult)}`);
-    } catch (error) {
-      this.emitLog(state.pageId, `自动登录脚本执行失败: ${error.message}`);
-      state.autoLoginInProgress = false;
-      return;
-    }
-
+    await state.window.webContents.executeJavaScript(script, true);
     setTimeout(() => {
       if (!state.window.isDestroyed()) {
-        const destination = autoLogin.postLoginUrl || targetUrl;
-        this.emitLog(state.pageId, `自动登录流程结束，跳转到: ${destination}`);
+        const destination = autoLogin.postLoginUrl || state.pageConfig.url;
+        this.emitLog(state.pageId, `自动登录流程结束，10秒后跳转: ${destination}`);
         state.window.webContents.loadURL(destination);
       }
-      state.autoLoginInProgress = false;
     }, 10000);
   }
 
@@ -238,7 +207,7 @@ class ListenerRuntime {
       throw new Error('页面未运行，无法选择元素');
     }
 
-    return state.window.webContents.executeJavaScript(
+    const result = await state.window.webContents.executeJavaScript(
       `new Promise((resolve) => {
         const oldCursor = document.body.style.cursor;
         document.body.style.cursor = 'crosshair';
@@ -251,62 +220,17 @@ class ListenerRuntime {
         tooltip.style.fontSize = '12px';
         tooltip.style.pointerEvents = 'none';
         tooltip.style.borderRadius = '4px';
-        tooltip.style.maxWidth = '70vw';
-        tooltip.style.whiteSpace = 'nowrap';
-        tooltip.style.overflow = 'hidden';
-        tooltip.style.textOverflow = 'ellipsis';
         document.documentElement.appendChild(tooltip);
 
-        const escapePart = (value) => {
-          if (!value) return '';
-          return String(value).replaceAll(':', '\\:').replaceAll('.', '\\.').replaceAll('[', '\\[').replaceAll(']', '\\]');
-        };
-
-        const nthOfType = (el) => {
-          let index = 1;
-          let sib = el;
-          while ((sib = sib.previousElementSibling)) {
-            if (sib.tagName === el.tagName) {
-              index += 1;
-            }
-          }
-          return index;
-        };
-
-        const buildSelector = (element) => {
-          if (!element || element.nodeType !== 1) return '';
-          if (element.id) {
-            return '#' + escapePart(element.id);
-          }
-
-          const parts = [];
-          let current = element;
-          while (current && current.nodeType === 1 && current !== document.documentElement) {
-            let part = current.tagName.toLowerCase();
-            if (current.id) {
-              part += '#' + escapePart(current.id);
-              parts.unshift(part);
-              break;
-            }
-
-            const className = typeof current.className === 'string' ? current.className.trim() : '';
-            if (className) {
-              const classes = className.split(/\s+/).filter(Boolean).slice(0, 3).map((name) => '.' + escapePart(name));
-              part += classes.join('');
-            }
-
-            part += ':nth-of-type(' + nthOfType(current) + ')';
-            parts.unshift(part);
-            current = current.parentElement;
-          }
-
-          return parts.join(' > ');
+        const buildSelector = (el) => {
+          if (el.id) return '#' + el.id;
+          const cls = el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : '';
+          return el.tagName.toLowerCase() + cls;
         };
 
         const onMove = (event) => {
-          const selector = buildSelector(event.target);
-          tooltip.textContent = selector;
-          tooltip.title = selector;
+          const el = event.target;
+          tooltip.textContent = buildSelector(el);
           tooltip.style.left = event.clientX + 12 + 'px';
           tooltip.style.top = event.clientY + 12 + 'px';
         };
@@ -331,6 +255,8 @@ class ListenerRuntime {
       })`,
       true
     );
+
+    return result;
   }
 }
 

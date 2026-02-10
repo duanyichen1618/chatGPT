@@ -16,9 +16,7 @@
       "listeners": [
         {
           "name": "授权Token",
-          "urlPatterns": [
-            "https://example.com/a/api/*"
-          ],
+          "urlPatterns": ["https://example.com/a/api/*"],
           "headerName": "authorization",
           "primaryKey": "system_a_token"
         }
