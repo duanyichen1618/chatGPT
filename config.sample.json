@@ -1,16 +1,24 @@
 {
+  "settings": {
+    "launchDelaySeconds": 30,
+    "autoStartOnBoot": false,
+    "listenerHeadless": false,
+    "autoLoginHeadless": false
+  },
   "databasePath": "./data.sqlite",
   "pages": [
     {
-      "name": "System A",
+      "id": "system-a",
+      "name": "系统A",
       "url": "https://example.com/a/dashboard",
       "refreshSeconds": 30,
+      "manualLogin": false,
       "listeners": [
         {
-          "name": "auth-token",
+          "name": "授权Token",
           "urlPatterns": ["https://example.com/a/api/*"],
           "headerName": "authorization",
-          "primaryKey": "system_a_auth_token"
+          "primaryKey": "system_a_token"
         }
       ],
       "autoLogin": {
