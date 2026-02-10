@@ -30,7 +30,8 @@
         "passwordSelector": "#password",
         "password": "demo123",
         "loginButtonSelector": "#login-btn",
-        "postLoginUrl": "https://example.com/a/dashboard"
+        "postLoginUrl": "https://example.com/a/dashboard",
+        "collapsed": false
       }
     }
   ]
