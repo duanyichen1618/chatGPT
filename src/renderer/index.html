@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>库存同步中心</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <h1>库存同步中心</h1>
+      <p class="small">网页监听模块在后台持续运行，可通过菜单或按钮进入配置窗口。</p>
+      <div class="row">
+        <button id="open-listener">打开网页监听配置</button>
+        <button id="pause" class="warn">暂停自动启动</button>
+        <button id="resume" class="secondary">恢复自动启动</button>
+        <button id="devtools" class="secondary">开发者模式</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span id="countdown" class="badge">倒计时 --</span>
+        <label style="flex-direction:row;align-items:center;gap:6px;">
+          <input id="auto-launch" type="checkbox" /> 开机自动启动
+        </label>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>运行日志（中文关键字）</h2>
+      <div id="log-box" class="log-box"></div>
+    </div>
+  </div>
+  <script src="./index.js"></script>
+</body>
+</html>
